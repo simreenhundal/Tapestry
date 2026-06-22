@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './contextInsightRequest';
+export * from './contextInsightResponse';
+export * from './contextInsightResponseReadiness';
 export * from './createEmployeeBody';
 export * from './employee';
 export * from './healthStatus';

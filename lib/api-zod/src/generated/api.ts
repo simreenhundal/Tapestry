@@ -52,3 +52,25 @@ export const CreateEmployeeBody = zod.object({
 })
 
 
+/**
+ * @summary Generate AI context insight for an employee
+ */
+export const GenerateContextInsightBody = zod.object({
+  "name": zod.string(),
+  "city": zod.string(),
+  "country": zod.string(),
+  "timezone": zod.string().optional(),
+  "religion": zod.string().optional(),
+  "culturalBackground": zod.string().optional(),
+  "caregivingResponsibilities": zod.string().optional(),
+  "additionalContext": zod.string().optional(),
+  "meetingDate": zod.string().optional().describe('ISO date string of proposed meeting')
+})
+
+export const GenerateContextInsightResponse = zod.object({
+  "insight": zod.string(),
+  "readiness": zod.enum(['green', 'yellow', 'red']),
+  "summary": zod.string()
+})
+
+

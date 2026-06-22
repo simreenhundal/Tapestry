@@ -37,3 +37,31 @@ export interface CreateEmployeeBody {
 
 export type ListEmployeesResponse = Employee[];
 
+export interface ContextInsightRequest {
+  name: string;
+  city: string;
+  country: string;
+  timezone?: string;
+  religion?: string;
+  culturalBackground?: string;
+  caregivingResponsibilities?: string;
+  additionalContext?: string;
+  /** ISO date string of proposed meeting */
+  meetingDate?: string;
+}
+
+export type ContextInsightResponseReadiness = typeof ContextInsightResponseReadiness[keyof typeof ContextInsightResponseReadiness];
+
+
+export const ContextInsightResponseReadiness = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+export interface ContextInsightResponse {
+  insight: string;
+  readiness: ContextInsightResponseReadiness;
+  summary: string;
+}
+

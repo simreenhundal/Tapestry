@@ -20,6 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ContextInsightRequest,
+  ContextInsightResponse,
   CreateEmployeeBody,
   Employee,
   HealthStatus,
@@ -262,5 +264,76 @@ export const useCreateEmployee = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateEmployeeMutationOptions(options));
+    }
+
+export const getGenerateContextInsightUrl = () => {
+
+
+
+
+  return `/api/context-insight`
+}
+
+/**
+ * @summary Generate AI context insight for an employee
+ */
+export const generateContextInsight = async (contextInsightRequest: ContextInsightRequest, options?: RequestInit): Promise<ContextInsightResponse> => {
+
+  return customFetch<ContextInsightResponse>(getGenerateContextInsightUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      contextInsightRequest,)
+  }
+);}
+
+
+
+
+export const getGenerateContextInsightMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateContextInsight>>, TError,{data: BodyType<ContextInsightRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateContextInsight>>, TError,{data: BodyType<ContextInsightRequest>}, TContext> => {
+
+const mutationKey = ['generateContextInsight'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateContextInsight>>, {data: BodyType<ContextInsightRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  generateContextInsight(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateContextInsightMutationResult = NonNullable<Awaited<ReturnType<typeof generateContextInsight>>>
+    export type GenerateContextInsightMutationBody = BodyType<ContextInsightRequest>
+    export type GenerateContextInsightMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Generate AI context insight for an employee
+ */
+export const useGenerateContextInsight = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateContextInsight>>, TError,{data: BodyType<ContextInsightRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateContextInsight>>,
+        TError,
+        {data: BodyType<ContextInsightRequest>},
+        TContext
+      > => {
+      return useMutation(getGenerateContextInsightMutationOptions(options));
     }
 

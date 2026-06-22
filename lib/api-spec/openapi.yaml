@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: employees
     description: Employee operations
+  - name: ai
+    description: AI operations
 paths:
   /healthz:
     get:
@@ -55,6 +57,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Employee"
+  /context-insight:
+    post:
+      operationId: generateContextInsight
+      tags: [ai]
+      summary: Generate AI context insight for an employee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContextInsightRequest"
+      responses:
+        "200":
+          description: AI context insight generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContextInsightResponse"
 components:
   schemas:
     HealthStatus:
@@ -128,4 +148,44 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/Employee"
+    ContextInsightRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        timezone:
+          type: string
+        religion:
+          type: string
+        culturalBackground:
+          type: string
+        caregivingResponsibilities:
+          type: string
+        additionalContext:
+          type: string
+        meetingDate:
+          type: string
+          description: "ISO date string of proposed meeting"
+      required:
+        - name
+        - city
+        - country
+    ContextInsightResponse:
+      type: object
+      properties:
+        insight:
+          type: string
+        readiness:
+          type: string
+          enum: [green, yellow, red]
+        summary:
+          type: string
+      required:
+        - insight
+        - readiness
+        - summary
 
