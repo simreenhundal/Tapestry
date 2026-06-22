@@ -1,37 +1,33 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { employeesTable } from "@workspace/db/schema";
+import { isGoogleCalendarConnected, fetchGoogleCalendarEvents } from "../lib/google-calendar";
 import { getConnectorToken } from "../lib/replit-connector";
-import { fetchGoogleCalendarEvents } from "../lib/google-calendar";
 import { fetchMicrosoftCalendarEvents } from "../lib/microsoft-graph";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
-const GOOGLE_CONNECTION_ID = process.env.GOOGLE_CALENDAR_CONNECTION_ID ?? "";
 const MICROSOFT_CONNECTION_ID = process.env.MICROSOFT_CALENDAR_CONNECTION_ID ?? "";
 
 router.get("/calendar/status", async (_req, res): Promise<void> => {
-  const [googleToken, microsoftToken] = await Promise.all([
-    GOOGLE_CONNECTION_ID ? getConnectorToken(GOOGLE_CONNECTION_ID) : Promise.resolve(null),
+  const [google, microsoftToken] = await Promise.all([
+    isGoogleCalendarConnected(),
     MICROSOFT_CONNECTION_ID ? getConnectorToken(MICROSOFT_CONNECTION_ID) : Promise.resolve(null),
   ]);
 
-  res.json({
-    google: googleToken !== null,
-    microsoft: microsoftToken !== null,
-  });
+  res.json({ google, microsoft: microsoftToken !== null });
 });
 
 router.get("/calendar/meetings", async (req, res): Promise<void> => {
   const hoursAhead = Math.min(Number(req.query.hoursAhead ?? 48), 168);
 
-  const [googleToken, microsoftToken] = await Promise.all([
-    GOOGLE_CONNECTION_ID ? getConnectorToken(GOOGLE_CONNECTION_ID) : Promise.resolve(null),
+  const [googleConnected, microsoftToken] = await Promise.all([
+    isGoogleCalendarConnected(),
     MICROSOFT_CONNECTION_ID ? getConnectorToken(MICROSOFT_CONNECTION_ID) : Promise.resolve(null),
   ]);
 
-  if (!googleToken && !microsoftToken) {
+  if (!googleConnected && !microsoftToken) {
     res.status(503).json({ error: "No calendar connected", connected: false });
     return;
   }
@@ -52,14 +48,14 @@ router.get("/calendar/meetings", async (req, res): Promise<void> => {
 
   const meetings: Meeting[] = [];
 
-  if (googleToken) {
+  if (googleConnected) {
     try {
-      const events = await fetchGoogleCalendarEvents(googleToken, hoursAhead);
+      const events = await fetchGoogleCalendarEvents(hoursAhead);
       for (const event of events) {
-        const attendees: Attendee[] = (event.attendees ?? []).map((a) => ({
-          email: a.email,
-          name: a.displayName ?? a.email,
-        }));
+        const attendees: Attendee[] = (event.attendees ?? [])
+          .filter((a) => !a.self)
+          .map((a) => ({ email: a.email, name: a.displayName ?? a.email }));
+
         const matchedEmployees = attendees
           .map((a) => emailToEmployee.get(a.email.toLowerCase()))
           .filter((e): e is (typeof employees)[number] => e !== undefined);
@@ -108,7 +104,7 @@ router.get("/calendar/meetings", async (req, res): Promise<void> => {
 
   meetings.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
-  const provider = googleToken ? "google" : "microsoft";
+  const provider = googleConnected ? "google" : "microsoft";
   res.json({ meetings, provider });
 });
 
