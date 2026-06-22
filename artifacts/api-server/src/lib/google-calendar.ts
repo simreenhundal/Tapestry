@@ -10,10 +10,11 @@ export interface GoogleEvent {
   attendees?: { email: string; displayName?: string; self?: boolean }[];
 }
 
+// Google Calendar API base path via Replit connector proxy is /calendar/v3/...
 export async function isGoogleCalendarConnected(): Promise<boolean> {
   try {
     const connectors = new ReplitConnectors();
-    const res = await connectors.proxy("google-calendar", "/users/me/calendarList?maxResults=1", {
+    const res = await connectors.proxy("google-calendar", "/calendar/v3/users/me/calendarList?maxResults=1", {
       method: "GET",
     });
     return res.ok;
@@ -38,7 +39,7 @@ export async function fetchGoogleCalendarEvents(hoursAhead: number): Promise<Goo
 
   const res = await connectors.proxy(
     "google-calendar",
-    `/calendars/primary/events?${params}`,
+    `/calendar/v3/calendars/primary/events?${params}`,
     { method: "GET" }
   );
 
