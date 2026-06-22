@@ -56,7 +56,7 @@ function WaitlistForm() {
 
   return (
     <form
-      onSubmit={handleSubmit} 
+      onSubmit={handleSubmit}
       className="flex flex-col sm:flex-row gap-3 max-w-md w-full"
     >
       <div className="flex-1 space-y-1">
@@ -161,7 +161,7 @@ function Home() {
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif font-normal leading-[1.05] tracking-[-0.02em] text-primary mb-8">
               See the threads.
               <br />
-              Understand the Simreen.
+              Understand the whole.
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-2xl mb-12 font-sans font-light">
               Today's tools ask: <em>Can this meeting happen?</em>
