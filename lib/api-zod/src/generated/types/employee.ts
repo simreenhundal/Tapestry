@@ -5,9 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
-}
 
 export interface Employee {
   id: number;
@@ -20,20 +17,5 @@ export interface Employee {
   culturalBackground?: string;
   caregivingResponsibilities?: string;
   additionalContext?: string;
-  createdAt: string;
+  createdAt: Date;
 }
-
-export interface CreateEmployeeBody {
-  name: string;
-  email: string;
-  city: string;
-  country: string;
-  timezone?: string;
-  religion?: string;
-  culturalBackground?: string;
-  caregivingResponsibilities?: string;
-  additionalContext?: string;
-}
-
-export type ListEmployeesResponse = Employee[];
-

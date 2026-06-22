@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: employees
+    description: Employee operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,35 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /employees:
+    get:
+      operationId: listEmployees
+      tags: [employees]
+      summary: List all employees
+      responses:
+        "200":
+          description: A list of employees
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEmployeesResponse"
+    post:
+      operationId: createEmployee
+      tags: [employees]
+      summary: Create an employee profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEmployeeBody"
+      responses:
+        "201":
+          description: Employee created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +64,68 @@ components:
           type: string
       required:
         - status
+    Employee:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        timezone:
+          type: string
+        religion:
+          type: string
+        culturalBackground:
+          type: string
+        caregivingResponsibilities:
+          type: string
+        additionalContext:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - email
+        - city
+        - country
+        - timezone
+        - createdAt
+    CreateEmployeeBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        timezone:
+          type: string
+        religion:
+          type: string
+        culturalBackground:
+          type: string
+        caregivingResponsibilities:
+          type: string
+        additionalContext:
+          type: string
+      required:
+        - name
+        - email
+        - city
+        - country
+    ListEmployeesResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/Employee"
 

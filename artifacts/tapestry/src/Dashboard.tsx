@@ -1,117 +1,168 @@
-import { useState } from "react";
-import { Route, Switch, Link } from "wouter";
-import Dashboard from "./Dashboard";
+import { useMemo } from "react";
+import { Link } from "wouter";
+import { AlertTriangle, Clock, Globe2, Info, PlusCircle, Loader2 } from "lucide-react";
+import { useListEmployees } from "@workspace/api-client-react";
 
-// This represents one team member
-type TeamMember = {
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+// The Employee type from the generated API
+type Employee = {
   id: number;
   name: string;
+  email: string;
   city: string;
+  country: string;
+  timezone: string;
+  religion?: string;
+  culturalBackground?: string;
+  caregivingResponsibilities?: string;
+  additionalContext?: string;
+  createdAt: string;
 };
 
-export default function Dashboard() {
-  // useState stores a list of team members. It starts empty.
-  const [members, setMembers] = useState<TeamMember[]>([]);
+function getContextFlags(employee: Employee) {
+  const flags: string[] = [];
 
-  // These store what the user is currently typing
-  const [name, setName] = useState("");
-  const [city, setCity] = useState("");
-
-  // This runs when the manager clicks "Add Team Member"
-  function addMember() {
-    if (!name || !city) return; // do nothing if fields are empty
-
-    const newMember: TeamMember = {
-      id: Date.now(), // unique number based on current time
-      name: name,
-      city: city,
-    };
-
-    setMembers([...members, newMember]); // add to the list
-    setName(""); // clear the name field
-    setCity(""); // clear the city field
+  const religionLower = (employee.religion || "").toLowerCase();
+  if (religionLower.includes("islam") || religionLower.includes("muslim")) {
+    flags.push("Observes Ramadan — schedule consideration for Feb–Mar annually");
   }
 
+  const caregivingLower = (employee.caregivingResponsibilities || "").toLowerCase();
+  if (caregivingLower.includes("school")) {
+    flags.push("May have adjusted focus during school holidays");
+  }
+  if (caregivingLower.includes("elderly")) {
+    flags.push("Caregiving responsibilities may affect availability");
+  }
+
+  return flags;
+}
+
+export default function Dashboard() {
+  const { data: employees, isLoading, isError } = useListEmployees();
+
   return (
-    <div
-      style={{
-        padding: "40px",
-        fontFamily: "sans-serif",
-        maxWidth: "800px",
-        margin: "0 auto",
-      }}
-    >
-      <h1 style={{ fontSize: "28px", marginBottom: "8px" }}>
-        Team Context Dashboard
-      </h1>
-      <p style={{ color: "#666", marginBottom: "32px" }}>
-        Add your team members to see their context.
-      </p>
-
-      {/* The form to add a new team member */}
-      <div style={{ display: "flex", gap: "12px", marginBottom: "40px" }}>
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          style={{
-            padding: "10px",
-            border: "1px solid #ddd",
-            borderRadius: "6px",
-            flex: 1,
-          }}
-        /> 
-        <input
-          type="text"
-          placeholder="City (e.g. Toronto)"
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          style={{
-            padding: "10px",
-            border: "1px solid #ddd",
-            borderRadius: "6px",
-            flex: 1,
-          }}
-        />
-        <button
-          onClick={addMember}
-          style={{
-            padding: "10px 20px",
-            background: "#1a2b4a",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-          }}
-        >
-          Add Team Member
-        </button>
-      </div>
-
-      {/* Show a message if no members added yet */}
-      {members.length === 0 && (
-        <p style={{ color: "#999", textAlign: "center", marginTop: "60px" }}>
-          No team members yet. Add someone above.
-        </p>
-      )}
-
-      {/* Loop through members and show a card for each one */}
-      <div style={{ display: "grid", gap: "16px" }}>
-        {members.map((member) => (
-          <div
-            key={member.id}
-            style={{
-              border: "1px solid #e5e7eb",
-              borderRadius: "12px",
-              padding: "24px",
-              background: "white",
-            }}
-          >
-            <h2 style={{ margin: 0, fontSize: "18px" }}>{member.name}</h2>
-            <p style={{ margin: "4px 0 0", color: "#666" }}>{member.city}</p>
+    <div className="min-h-[100dvh] bg-secondary/20 p-6 md:p-12">
+      <div className="max-w-6xl mx-auto space-y-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-serif text-primary">Team Context Dashboard</h1>
+            <p className="text-muted-foreground mt-1">
+              Understand your team's rhythms and responsibilities.
+            </p>
           </div>
-        ))}
+          <Link href="/onboarding" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Team Member
+          </Link>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center items-center py-24 text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="ml-3">Loading team context...</span>
+          </div>
+        ) : isError ? (
+          <div className="text-center py-24 text-destructive">
+            Failed to load employees. Please try again.
+          </div>
+        ) : !employees || employees.length === 0 ? (
+          <div className="text-center py-24 bg-white rounded-xl border border-border/50">
+            <Globe2 className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+            <h3 className="text-lg font-medium text-primary mb-2">No team members yet</h3>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Add someone to your team to start building a contextual understanding of how they work best.
+            </p>
+            <Link href="/onboarding" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add First Member
+            </Link>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {employees.map((employee) => {
+              const flags = getContextFlags(employee);
+              let signalColor = "bg-green-500";
+              if (flags.length === 1) signalColor = "bg-yellow-500";
+              else if (flags.length >= 2) signalColor = "bg-red-500";
+
+              return (
+                <Card key={employee.id} className="border-border/60 shadow-sm flex flex-col">
+                  <CardHeader className="pb-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-xl font-serif text-primary">
+                          {employee.name}
+                        </CardTitle>
+                        <div className="text-sm text-muted-foreground flex items-center mt-1">
+                          <Globe2 className="w-3.5 h-3.5 mr-1.5" />
+                          {employee.city}, {employee.country}
+                        </div>
+                        <div className="text-sm text-muted-foreground flex items-center mt-1">
+                          <Clock className="w-3.5 h-3.5 mr-1.5" />
+                          {employee.timezone}
+                        </div>
+                      </div>
+                      <div className="relative flex h-3 w-3 mt-1">
+                        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${signalColor}`}></span>
+                        <span className={`relative inline-flex rounded-full h-3 w-3 ${signalColor}`}></span>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-1 flex flex-col">
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {employee.religion && (
+                        <Badge variant="secondary" className="bg-secondary/50 font-normal">
+                          {employee.religion}
+                        </Badge>
+                      )}
+                      {employee.culturalBackground && (
+                        <Badge variant="secondary" className="bg-secondary/50 font-normal">
+                          {employee.culturalBackground}
+                        </Badge>
+                      )}
+                      {employee.caregivingResponsibilities && employee.caregivingResponsibilities !== "None" && (
+                        <Badge variant="secondary" className="bg-secondary/50 font-normal">
+                          Care: {employee.caregivingResponsibilities}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="mt-auto space-y-3 pt-4 border-t border-border/40">
+                      {flags.length > 0 ? (
+                        <div className="space-y-2">
+                          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            Readiness Insights
+                          </div>
+                          {flags.map((flag, idx) => (
+                            <div key={idx} className="flex items-start text-sm">
+                              <AlertTriangle className="w-4 h-4 text-yellow-600 mr-2 shrink-0 mt-0.5" />
+                              <span className="text-primary/90">{flag}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-start text-sm">
+                          <Info className="w-4 h-4 text-green-600 mr-2 shrink-0 mt-0.5" />
+                          <span className="text-primary/90">No active context flags. Routine scheduling.</span>
+                        </div>
+                      )}
+
+                      {employee.additionalContext && (
+                        <div className="bg-secondary/30 p-3 rounded-md mt-4 text-sm italic text-muted-foreground border border-border/50">
+                          "{employee.additionalContext}"
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
