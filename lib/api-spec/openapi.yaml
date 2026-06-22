@@ -14,6 +14,8 @@ tags:
     description: Employee operations
   - name: ai
     description: AI operations
+  - name: calendar
+    description: Calendar integration operations
 paths:
   /healthz:
     get:
@@ -75,6 +77,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ContextInsightResponse"
+  /calendar/status:
+    get:
+      operationId: getCalendarStatus
+      tags: [calendar]
+      summary: Get calendar connection status
+      responses:
+        "200":
+          description: Calendar connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarStatus"
+  /calendar/meetings:
+    get:
+      operationId: listCalendarMeetings
+      tags: [calendar]
+      summary: List upcoming meetings with matched employee context
+      parameters:
+        - in: query
+          name: hoursAhead
+          schema:
+            type: integer
+            default: 48
+          description: How many hours ahead to look for meetings
+      responses:
+        "200":
+          description: Upcoming meetings with matched Tapestry employees
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarMeetingsResponse"
+        "503":
+          description: No calendar connected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarError"
 components:
   schemas:
     HealthStatus:
@@ -188,4 +227,108 @@ components:
         - insight
         - readiness
         - summary
-
+    CalendarStatus:
+      type: object
+      properties:
+        google:
+          type: boolean
+        microsoft:
+          type: boolean
+      required:
+        - google
+        - microsoft
+    CalendarAttendee:
+      type: object
+      properties:
+        email:
+          type: string
+        name:
+          type: string
+      required:
+        - email
+        - name
+    MatchedEmployee:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        timezone:
+          type: string
+        religion:
+          type: string
+        culturalBackground:
+          type: string
+        caregivingResponsibilities:
+          type: string
+        additionalContext:
+          type: string
+      required:
+        - id
+        - name
+        - email
+        - city
+        - country
+        - timezone
+    CalendarMeeting:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+        provider:
+          type: string
+          enum: [google, microsoft]
+        attendees:
+          type: array
+          items:
+            $ref: "#/components/schemas/CalendarAttendee"
+        matchedEmployees:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchedEmployee"
+      required:
+        - id
+        - title
+        - start
+        - end
+        - provider
+        - attendees
+        - matchedEmployees
+    CalendarMeetingsResponse:
+      type: object
+      properties:
+        meetings:
+          type: array
+          items:
+            $ref: "#/components/schemas/CalendarMeeting"
+        provider:
+          type: string
+          enum: [google, microsoft]
+      required:
+        - meetings
+        - provider
+    CalendarError:
+      type: object
+      properties:
+        error:
+          type: string
+        connected:
+          type: boolean
+      required:
+        - error
+        - connected

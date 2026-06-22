@@ -20,11 +20,15 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CalendarError,
+  CalendarMeetingsResponse,
+  CalendarStatus,
   ContextInsightRequest,
   ContextInsightResponse,
   CreateEmployeeBody,
   Employee,
   HealthStatus,
+  ListCalendarMeetingsParams,
   ListEmployeesResponse
 } from './api.schemas';
 
@@ -336,4 +340,165 @@ export const useGenerateContextInsight = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getGenerateContextInsightMutationOptions(options));
     }
+
+export const getGetCalendarStatusUrl = () => {
+
+
+
+
+  return `/api/calendar/status`
+}
+
+/**
+ * @summary Get calendar connection status
+ */
+export const getCalendarStatus = async ( options?: RequestInit): Promise<CalendarStatus> => {
+
+  return customFetch<CalendarStatus>(getGetCalendarStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCalendarStatusQueryKey = () => {
+    return [
+    `/api/calendar/status`
+    ] as const;
+    }
+
+
+export const getGetCalendarStatusQueryOptions = <TData = Awaited<ReturnType<typeof getCalendarStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCalendarStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCalendarStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCalendarStatus>>> = ({ signal }) => getCalendarStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCalendarStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCalendarStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getCalendarStatus>>>
+export type GetCalendarStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get calendar connection status
+ */
+
+export function useGetCalendarStatus<TData = Awaited<ReturnType<typeof getCalendarStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCalendarStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCalendarStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListCalendarMeetingsUrl = (params?: ListCalendarMeetingsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/calendar/meetings?${stringifiedParams}` : `/api/calendar/meetings`
+}
+
+/**
+ * @summary List upcoming meetings with matched employee context
+ */
+export const listCalendarMeetings = async (params?: ListCalendarMeetingsParams, options?: RequestInit): Promise<CalendarMeetingsResponse> => {
+
+  return customFetch<CalendarMeetingsResponse>(getListCalendarMeetingsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCalendarMeetingsQueryKey = (params?: ListCalendarMeetingsParams,) => {
+    return [
+    `/api/calendar/meetings`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListCalendarMeetingsQueryOptions = <TData = Awaited<ReturnType<typeof listCalendarMeetings>>, TError = ErrorType<CalendarError>>(params?: ListCalendarMeetingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCalendarMeetings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCalendarMeetingsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCalendarMeetings>>> = ({ signal }) => listCalendarMeetings(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCalendarMeetings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCalendarMeetingsQueryResult = NonNullable<Awaited<ReturnType<typeof listCalendarMeetings>>>
+export type ListCalendarMeetingsQueryError = ErrorType<CalendarError>
+
+
+/**
+ * @summary List upcoming meetings with matched employee context
+ */
+
+export function useListCalendarMeetings<TData = Awaited<ReturnType<typeof listCalendarMeetings>>, TError = ErrorType<CalendarError>>(
+ params?: ListCalendarMeetingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCalendarMeetings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCalendarMeetingsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 

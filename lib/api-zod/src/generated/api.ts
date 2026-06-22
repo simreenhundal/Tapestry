@@ -74,3 +74,49 @@ export const GenerateContextInsightResponse = zod.object({
 })
 
 
+/**
+ * @summary Get calendar connection status
+ */
+export const GetCalendarStatusResponse = zod.object({
+  "google": zod.boolean(),
+  "microsoft": zod.boolean()
+})
+
+
+/**
+ * @summary List upcoming meetings with matched employee context
+ */
+export const listCalendarMeetingsQueryHoursAheadDefault = 48;
+
+export const ListCalendarMeetingsQueryParams = zod.object({
+  "hoursAhead": zod.coerce.number().default(listCalendarMeetingsQueryHoursAheadDefault).describe('How many hours ahead to look for meetings')
+})
+
+export const ListCalendarMeetingsResponse = zod.object({
+  "meetings": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "start": zod.coerce.date(),
+  "end": zod.coerce.date(),
+  "provider": zod.enum(['google', 'microsoft']),
+  "attendees": zod.array(zod.object({
+  "email": zod.string(),
+  "name": zod.string()
+})),
+  "matchedEmployees": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "city": zod.string(),
+  "country": zod.string(),
+  "timezone": zod.string(),
+  "religion": zod.string().optional(),
+  "culturalBackground": zod.string().optional(),
+  "caregivingResponsibilities": zod.string().optional(),
+  "additionalContext": zod.string().optional()
+}))
+})),
+  "provider": zod.enum(['google', 'microsoft'])
+})
+
+

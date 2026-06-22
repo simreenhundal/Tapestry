@@ -65,3 +65,69 @@ export interface ContextInsightResponse {
   summary: string;
 }
 
+export interface CalendarStatus {
+  google: boolean;
+  microsoft: boolean;
+}
+
+export interface CalendarAttendee {
+  email: string;
+  name: string;
+}
+
+export interface MatchedEmployee {
+  id: number;
+  name: string;
+  email: string;
+  city: string;
+  country: string;
+  timezone: string;
+  religion?: string;
+  culturalBackground?: string;
+  caregivingResponsibilities?: string;
+  additionalContext?: string;
+}
+
+export type CalendarMeetingProvider = typeof CalendarMeetingProvider[keyof typeof CalendarMeetingProvider];
+
+
+export const CalendarMeetingProvider = {
+  google: 'google',
+  microsoft: 'microsoft',
+} as const;
+
+export interface CalendarMeeting {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  provider: CalendarMeetingProvider;
+  attendees: CalendarAttendee[];
+  matchedEmployees: MatchedEmployee[];
+}
+
+export type CalendarMeetingsResponseProvider = typeof CalendarMeetingsResponseProvider[keyof typeof CalendarMeetingsResponseProvider];
+
+
+export const CalendarMeetingsResponseProvider = {
+  google: 'google',
+  microsoft: 'microsoft',
+} as const;
+
+export interface CalendarMeetingsResponse {
+  meetings: CalendarMeeting[];
+  provider: CalendarMeetingsResponseProvider;
+}
+
+export interface CalendarError {
+  error: string;
+  connected: boolean;
+}
+
+export type ListCalendarMeetingsParams = {
+/**
+ * How many hours ahead to look for meetings
+ */
+hoursAhead?: number;
+};
+
