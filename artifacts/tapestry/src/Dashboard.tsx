@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Route, Switch, Link } from "wouter";
+import Dashboard from "./Dashboard";
 
 // This represents one team member
 type TeamMember = {
@@ -59,7 +61,7 @@ export default function Dashboard() {
             borderRadius: "6px",
             flex: 1,
           }}
-        />
+        /> 
         <input
           type="text"
           placeholder="City (e.g. Toronto)"
