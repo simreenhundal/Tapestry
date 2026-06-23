@@ -131,6 +131,6 @@ Tapestry is an MVP and actively being built. Ideas on deck:
 
 ## About
 
-Built by [Simreen Hundal](https://github.com/simreenhundal) — a student founder learning by building. Tapestry started from a simple observation: the best teams aren't the ones that meet the most, but the ones that meet at the *right* times, for the *right* people.
+Built by [Simreen Hundal](https://github.com/simreenhundal) — a student co-founder learning by building. Tapestry started from a simple observation: the best teams aren't the ones that meet the most, but the ones that meet at the *right* times, for the *right* people.
 
 _Contributions, ideas, and feedback are welcome._
