@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import {
   ArrowLeft,
@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   XCircle,
   Sparkles,
+  CalendarDays,
 } from "lucide-react";
 import { useListEmployees } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -94,6 +95,12 @@ function AggregateBanner({ report }: { report: ReadinessReport }) {
   );
 }
 
+function toLocalDatetimeString(isoString: string): string {
+  const d = new Date(isoString);
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function SchedulePage() {
   const { data: employees, isLoading: employeesLoading } = useListEmployees();
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -101,6 +108,31 @@ export default function SchedulePage() {
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<ReadinessReport | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [calendarMeetingTitle, setCalendarMeetingTitle] = useState<string | null>(null);
+  const autoRunRef = useRef(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const idsParam = params.get("ids");
+    const timeParam = params.get("time");
+    const titleParam = params.get("title");
+
+    if (idsParam && timeParam) {
+      const ids = idsParam.split(",").map(Number).filter(Boolean);
+      setSelectedIds(ids);
+      setMeetingDatetime(toLocalDatetimeString(timeParam));
+      if (titleParam) setCalendarMeetingTitle(decodeURIComponent(titleParam));
+      autoRunRef.current = true;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (autoRunRef.current && employees && selectedIds.length > 0 && meetingDatetime) {
+      autoRunRef.current = false;
+      void checkReadiness();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [employees, selectedIds.length, meetingDatetime]);
 
   const toggleEmployee = (id: number) => {
     setSelectedIds((prev) =>
@@ -159,9 +191,18 @@ export default function SchedulePage() {
             Back to Dashboard
           </Link>
           <h1 className="text-4xl font-serif text-primary mb-2">Meeting Scheduler</h1>
-          <p className="text-muted-foreground text-lg">
-            Select a time and attendees — Tapestry will check cultural, personal, and environmental readiness for everyone.
-          </p>
+          {calendarMeetingTitle ? (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <CalendarDays className="w-4 h-4 shrink-0" />
+              <span className="text-base">
+                Checking readiness for <span className="text-primary font-medium">"{calendarMeetingTitle}"</span>
+              </span>
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-lg">
+              Select a time and attendees — Tapestry will check cultural, personal, and environmental readiness for everyone.
+            </p>
+          )}
         </div>
 
         <div className="grid lg:grid-cols-[1fr_340px] gap-8">
