@@ -63,20 +63,20 @@ paths:
     post:
       operationId: generateContextInsight
       tags: [ai]
-      summary: Generate AI context insight for an employee
+      summary: Generate AI meeting readiness report for a list of employees
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ContextInsightRequest"
+              $ref: "#/components/schemas/MeetingReadinessRequest"
       responses:
         "200":
-          description: AI context insight generated
+          description: Meeting readiness report
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ContextInsightResponse"
+                $ref: "#/components/schemas/MeetingReadinessResponse"
   /calendar/status:
     get:
       operationId: getCalendarStatus
@@ -132,17 +132,31 @@ components:
           type: string
         email:
           type: string
+        company:
+          type: string
         city:
           type: string
         country:
           type: string
         timezone:
           type: string
+        role:
+          type: string
         religion:
           type: string
         culturalBackground:
           type: string
         caregivingResponsibilities:
+          type: string
+        preferredWorkStart:
+          type: string
+        preferredWorkEnd:
+          type: string
+        preferredWorkDays:
+          type: array
+          items:
+            type: string
+        healthConsiderations:
           type: string
         additionalContext:
           type: string
@@ -164,17 +178,31 @@ components:
           type: string
         email:
           type: string
+        company:
+          type: string
         city:
           type: string
         country:
           type: string
         timezone:
           type: string
+        role:
+          type: string
         religion:
           type: string
         culturalBackground:
           type: string
         caregivingResponsibilities:
+          type: string
+        preferredWorkStart:
+          type: string
+        preferredWorkEnd:
+          type: string
+        preferredWorkDays:
+          type: array
+          items:
+            type: string
+        healthConsiderations:
           type: string
         additionalContext:
           type: string
@@ -187,46 +215,67 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/Employee"
-    ContextInsightRequest:
+    MeetingReadinessRequest:
       type: object
       properties:
+        employeeIds:
+          type: array
+          items:
+            type: integer
+          description: List of employee IDs to check readiness for
+        meetingDatetime:
+          type: string
+          description: ISO 8601 datetime string (UTC) of the proposed meeting
+      required:
+        - employeeIds
+        - meetingDatetime
+    AttendeeReadiness:
+      type: object
+      properties:
+        employeeId:
+          type: integer
         name:
           type: string
         city:
           type: string
-        country:
-          type: string
         timezone:
           type: string
-        religion:
+        localTime:
           type: string
-        culturalBackground:
-          type: string
-        caregivingResponsibilities:
-          type: string
-        additionalContext:
-          type: string
-        meetingDate:
-          type: string
-          description: "ISO date string of proposed meeting"
-      required:
-        - name
-        - city
-        - country
-    ContextInsightResponse:
-      type: object
-      properties:
-        insight:
-          type: string
-        readiness:
+        signal:
           type: string
           enum: [green, yellow, red]
-        summary:
+        reason:
           type: string
       required:
-        - insight
-        - readiness
-        - summary
+        - employeeId
+        - name
+        - city
+        - timezone
+        - localTime
+        - signal
+        - reason
+    MeetingReadinessResponse:
+      type: object
+      properties:
+        attendees:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendeeReadiness"
+        aggregateSignal:
+          type: string
+          enum: [green, yellow, red]
+        recommendation:
+          type: string
+        alternatives:
+          type: array
+          items:
+            type: string
+      required:
+        - attendees
+        - aggregateSignal
+        - recommendation
+        - alternatives
     CalendarStatus:
       type: object
       properties:

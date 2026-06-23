@@ -1,0 +1,138 @@
+import { db, pool, employeesTable } from "@workspace/db";
+
+const employees = [
+  {
+    name: "Amara Okafor",
+    email: "amara.okafor@tapestry.demo",
+    company: "Tapestry Corp",
+    role: "Senior Product Manager",
+    city: "Lagos",
+    country: "Nigeria",
+    timezone: "Africa/Lagos",
+    religion: "Islam",
+    culturalBackground: "Yoruba heritage, observes Eid al-Fitr and Eid al-Adha",
+    caregivingResponsibilities: "School-age children",
+    preferredWorkStart: "09:00",
+    preferredWorkEnd: "17:00",
+    preferredWorkDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    healthConsiderations: "",
+    additionalContext: "School drop-off 7:30–8:30am. Friday midday prayer is important to me — please avoid scheduling 12–2pm WAT on Fridays.",
+  },
+  {
+    name: "Priya Chandrasekaran",
+    email: "priya.chandrasekaran@tapestry.demo",
+    company: "Tapestry Corp",
+    role: "Engineering Lead",
+    city: "Mumbai",
+    country: "India",
+    timezone: "Asia/Kolkata",
+    religion: "Hinduism",
+    culturalBackground: "Tamil Brahmin, observes Diwali, Pongal, and Navratri",
+    caregivingResponsibilities: "Elderly parent care",
+    preferredWorkStart: "08:30",
+    preferredWorkEnd: "17:30",
+    preferredWorkDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    healthConsiderations: "Migraines — avoids very early morning calls",
+    additionalContext: "My mother lives with me and I occasionally step away mid-afternoon for her care. I keep my mornings for deep work.",
+  },
+  {
+    name: "Mateus Ferreira",
+    email: "mateus.ferreira@tapestry.demo",
+    company: "Tapestry Corp",
+    role: "Head of Partnerships",
+    city: "São Paulo",
+    country: "Brazil",
+    timezone: "America/Sao_Paulo",
+    religion: "Christianity",
+    culturalBackground: "Brazilian, observes Carnival week and Semana Santa",
+    caregivingResponsibilities: "None",
+    preferredWorkStart: "09:00",
+    preferredWorkEnd: "18:00",
+    preferredWorkDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    healthConsiderations: "",
+    additionalContext: "I'm typically at my best between 10am–1pm BRT. Carnival week in February I'm largely unavailable.",
+  },
+  {
+    name: "Sophie Beaumont",
+    email: "sophie.beaumont@tapestry.demo",
+    company: "Tapestry Corp",
+    role: "Chief of Staff",
+    city: "London",
+    country: "United Kingdom",
+    timezone: "Europe/London",
+    religion: "",
+    culturalBackground: "British, secular",
+    caregivingResponsibilities: "School-age children",
+    preferredWorkStart: "08:00",
+    preferredWorkEnd: "16:00",
+    preferredWorkDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    healthConsiderations: "",
+    additionalContext: "School pickup at 3:15pm GMT — I'm usually unavailable 3–4pm. I work compressed hours and prefer morning calls.",
+  },
+  {
+    name: "Kenji Watanabe",
+    email: "kenji.watanabe@tapestry.demo",
+    company: "Tapestry Corp",
+    role: "Data Scientist",
+    city: "Tokyo",
+    country: "Japan",
+    timezone: "Asia/Tokyo",
+    religion: "Buddhism",
+    culturalBackground: "Japanese, observes Obon (August) and Golden Week (late April–early May)",
+    caregivingResponsibilities: "None",
+    preferredWorkStart: "10:00",
+    preferredWorkEnd: "19:00",
+    preferredWorkDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    healthConsiderations: "",
+    additionalContext: "I prefer late-morning start as I commute by train. Golden Week in late April is a national holiday — I'll be fully offline.",
+  },
+  {
+    name: "Laila Al-Rashid",
+    email: "laila.alrashid@tapestry.demo",
+    company: "Tapestry Corp",
+    role: "UX Research Lead",
+    city: "Nairobi",
+    country: "Kenya",
+    timezone: "Africa/Nairobi",
+    religion: "Islam",
+    culturalBackground: "Kenyan-Arab heritage, observes Ramadan and both Eids",
+    caregivingResponsibilities: "Other",
+    preferredWorkStart: "08:00",
+    preferredWorkEnd: "16:30",
+    preferredWorkDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    healthConsiderations: "Fasting during Ramadan affects afternoon energy levels",
+    additionalContext: "During Ramadan I prefer morning meetings before 1pm EAT. I care for a younger sibling a few afternoons per week.",
+  },
+  {
+    name: "Daniel Goldstein",
+    email: "daniel.goldstein@tapestry.demo",
+    company: "Tapestry Corp",
+    role: "VP of Finance",
+    city: "New York",
+    country: "United States",
+    timezone: "America/New_York",
+    religion: "Judaism",
+    culturalBackground: "Ashkenazi Jewish, observes Shabbat and major Jewish holidays",
+    caregivingResponsibilities: "School-age children",
+    preferredWorkStart: "09:00",
+    preferredWorkEnd: "17:30",
+    preferredWorkDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    healthConsiderations: "",
+    additionalContext: "I observe Shabbat — unavailable from Friday sunset through Saturday night. Rosh Hashanah, Yom Kippur, Passover, and Sukkot are full observance days.",
+  },
+];
+
+async function seed() {
+  console.log("Seeding employees...");
+  for (const emp of employees) {
+    await db.insert(employeesTable).values(emp).onConflictDoNothing();
+    console.log(`  ✓ ${emp.name} (${emp.city})`);
+  }
+  console.log("Seed complete.");
+  await pool.end();
+}
+
+seed().catch((err) => {
+  console.error("Seed failed:", err);
+  process.exit(1);
+});

@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './attendeeReadiness';
+export * from './attendeeReadinessSignal';
 export * from './calendarAttendee';
 export * from './calendarError';
 export * from './calendarMeeting';
@@ -13,12 +15,12 @@ export * from './calendarMeetingProvider';
 export * from './calendarMeetingsResponse';
 export * from './calendarMeetingsResponseProvider';
 export * from './calendarStatus';
-export * from './contextInsightRequest';
-export * from './contextInsightResponse';
-export * from './contextInsightResponseReadiness';
 export * from './createEmployeeBody';
 export * from './employee';
 export * from './healthStatus';
 export * from './listCalendarMeetingsParams';
 export * from './listEmployeesResponse';
 export * from './matchedEmployee';
+export * from './meetingReadinessRequest';
+export * from './meetingReadinessResponse';
+export * from './meetingReadinessResponseAggregateSignal';

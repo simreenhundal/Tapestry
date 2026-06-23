@@ -24,12 +24,18 @@ export const ListEmployeesResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "email": zod.string(),
+  "company": zod.string().optional(),
   "city": zod.string(),
   "country": zod.string(),
   "timezone": zod.string(),
+  "role": zod.string().optional(),
   "religion": zod.string().optional(),
   "culturalBackground": zod.string().optional(),
   "caregivingResponsibilities": zod.string().optional(),
+  "preferredWorkStart": zod.string().optional(),
+  "preferredWorkEnd": zod.string().optional(),
+  "preferredWorkDays": zod.array(zod.string()).optional(),
+  "healthConsiderations": zod.string().optional(),
   "additionalContext": zod.string().optional(),
   "createdAt": zod.coerce.date()
 })
@@ -42,35 +48,43 @@ export const ListEmployeesResponse = zod.array(ListEmployeesResponseItem)
 export const CreateEmployeeBody = zod.object({
   "name": zod.string(),
   "email": zod.string(),
+  "company": zod.string().optional(),
   "city": zod.string(),
   "country": zod.string(),
   "timezone": zod.string().optional(),
+  "role": zod.string().optional(),
   "religion": zod.string().optional(),
   "culturalBackground": zod.string().optional(),
   "caregivingResponsibilities": zod.string().optional(),
+  "preferredWorkStart": zod.string().optional(),
+  "preferredWorkEnd": zod.string().optional(),
+  "preferredWorkDays": zod.array(zod.string()).optional(),
+  "healthConsiderations": zod.string().optional(),
   "additionalContext": zod.string().optional()
 })
 
 
 /**
- * @summary Generate AI context insight for an employee
+ * @summary Generate AI meeting readiness report for a list of employees
  */
 export const GenerateContextInsightBody = zod.object({
-  "name": zod.string(),
-  "city": zod.string(),
-  "country": zod.string(),
-  "timezone": zod.string().optional(),
-  "religion": zod.string().optional(),
-  "culturalBackground": zod.string().optional(),
-  "caregivingResponsibilities": zod.string().optional(),
-  "additionalContext": zod.string().optional(),
-  "meetingDate": zod.string().optional().describe('ISO date string of proposed meeting')
+  "employeeIds": zod.array(zod.number()).describe('List of employee IDs to check readiness for'),
+  "meetingDatetime": zod.string().describe('ISO 8601 datetime string (UTC) of the proposed meeting')
 })
 
 export const GenerateContextInsightResponse = zod.object({
-  "insight": zod.string(),
-  "readiness": zod.enum(['green', 'yellow', 'red']),
-  "summary": zod.string()
+  "attendees": zod.array(zod.object({
+  "employeeId": zod.number(),
+  "name": zod.string(),
+  "city": zod.string(),
+  "timezone": zod.string(),
+  "localTime": zod.string(),
+  "signal": zod.enum(['green', 'yellow', 'red']),
+  "reason": zod.string()
+})),
+  "aggregateSignal": zod.enum(['green', 'yellow', 'red']),
+  "recommendation": zod.string(),
+  "alternatives": zod.array(zod.string())
 })
 
 

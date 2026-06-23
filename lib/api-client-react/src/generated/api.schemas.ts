@@ -13,12 +13,18 @@ export interface Employee {
   id: number;
   name: string;
   email: string;
+  company?: string;
   city: string;
   country: string;
   timezone: string;
+  role?: string;
   religion?: string;
   culturalBackground?: string;
   caregivingResponsibilities?: string;
+  preferredWorkStart?: string;
+  preferredWorkEnd?: string;
+  preferredWorkDays?: string[];
+  healthConsiderations?: string;
   additionalContext?: string;
   createdAt: string;
 }
@@ -26,43 +32,63 @@ export interface Employee {
 export interface CreateEmployeeBody {
   name: string;
   email: string;
+  company?: string;
   city: string;
   country: string;
   timezone?: string;
+  role?: string;
   religion?: string;
   culturalBackground?: string;
   caregivingResponsibilities?: string;
+  preferredWorkStart?: string;
+  preferredWorkEnd?: string;
+  preferredWorkDays?: string[];
+  healthConsiderations?: string;
   additionalContext?: string;
 }
 
 export type ListEmployeesResponse = Employee[];
 
-export interface ContextInsightRequest {
-  name: string;
-  city: string;
-  country: string;
-  timezone?: string;
-  religion?: string;
-  culturalBackground?: string;
-  caregivingResponsibilities?: string;
-  additionalContext?: string;
-  /** ISO date string of proposed meeting */
-  meetingDate?: string;
+export interface MeetingReadinessRequest {
+  /** List of employee IDs to check readiness for */
+  employeeIds: number[];
+  /** ISO 8601 datetime string (UTC) of the proposed meeting */
+  meetingDatetime: string;
 }
 
-export type ContextInsightResponseReadiness = typeof ContextInsightResponseReadiness[keyof typeof ContextInsightResponseReadiness];
+export type AttendeeReadinessSignal = typeof AttendeeReadinessSignal[keyof typeof AttendeeReadinessSignal];
 
 
-export const ContextInsightResponseReadiness = {
+export const AttendeeReadinessSignal = {
   green: 'green',
   yellow: 'yellow',
   red: 'red',
 } as const;
 
-export interface ContextInsightResponse {
-  insight: string;
-  readiness: ContextInsightResponseReadiness;
-  summary: string;
+export interface AttendeeReadiness {
+  employeeId: number;
+  name: string;
+  city: string;
+  timezone: string;
+  localTime: string;
+  signal: AttendeeReadinessSignal;
+  reason: string;
+}
+
+export type MeetingReadinessResponseAggregateSignal = typeof MeetingReadinessResponseAggregateSignal[keyof typeof MeetingReadinessResponseAggregateSignal];
+
+
+export const MeetingReadinessResponseAggregateSignal = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+export interface MeetingReadinessResponse {
+  attendees: AttendeeReadiness[];
+  aggregateSignal: MeetingReadinessResponseAggregateSignal;
+  recommendation: string;
+  alternatives: string[];
 }
 
 export interface CalendarStatus {

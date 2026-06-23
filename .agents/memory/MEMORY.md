@@ -1,0 +1,2 @@
+- [api-zod index exports](api-zod-index.md) — lib/api-zod/src/index.ts must manually re-export types from ./generated/types; update after any OpenAPI schema type changes
+- [scripts drizzle-orm imports](scripts-drizzle-deps.md) — scripts/src/ cannot import drizzle-orm directly; use @workspace/db exports or pool.query() for raw SQL

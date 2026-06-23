@@ -9,11 +9,17 @@
 export interface CreateEmployeeBody {
   name: string;
   email: string;
+  company?: string;
   city: string;
   country: string;
   timezone?: string;
+  role?: string;
   religion?: string;
   culturalBackground?: string;
   caregivingResponsibilities?: string;
+  preferredWorkStart?: string;
+  preferredWorkEnd?: string;
+  preferredWorkDays?: string[];
+  healthConsiderations?: string;
   additionalContext?: string;
 }

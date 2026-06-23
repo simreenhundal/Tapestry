@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ContextInsightResponseReadiness = typeof ContextInsightResponseReadiness[keyof typeof ContextInsightResponseReadiness];
+export type AttendeeReadinessSignal = typeof AttendeeReadinessSignal[keyof typeof AttendeeReadinessSignal];
 
 
-export const ContextInsightResponseReadiness = {
+export const AttendeeReadinessSignal = {
   green: 'green',
   yellow: 'yellow',
   red: 'red',

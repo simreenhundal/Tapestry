@@ -23,13 +23,13 @@ import type {
   CalendarError,
   CalendarMeetingsResponse,
   CalendarStatus,
-  ContextInsightRequest,
-  ContextInsightResponse,
   CreateEmployeeBody,
   Employee,
   HealthStatus,
   ListCalendarMeetingsParams,
-  ListEmployeesResponse
+  ListEmployeesResponse,
+  MeetingReadinessRequest,
+  MeetingReadinessResponse
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -279,17 +279,17 @@ export const getGenerateContextInsightUrl = () => {
 }
 
 /**
- * @summary Generate AI context insight for an employee
+ * @summary Generate AI meeting readiness report for a list of employees
  */
-export const generateContextInsight = async (contextInsightRequest: ContextInsightRequest, options?: RequestInit): Promise<ContextInsightResponse> => {
+export const generateContextInsight = async (meetingReadinessRequest: MeetingReadinessRequest, options?: RequestInit): Promise<MeetingReadinessResponse> => {
 
-  return customFetch<ContextInsightResponse>(getGenerateContextInsightUrl(),
+  return customFetch<MeetingReadinessResponse>(getGenerateContextInsightUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      contextInsightRequest,)
+      meetingReadinessRequest,)
   }
 );}
 
@@ -297,8 +297,8 @@ export const generateContextInsight = async (contextInsightRequest: ContextInsig
 
 
 export const getGenerateContextInsightMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateContextInsight>>, TError,{data: BodyType<ContextInsightRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof generateContextInsight>>, TError,{data: BodyType<ContextInsightRequest>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateContextInsight>>, TError,{data: BodyType<MeetingReadinessRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateContextInsight>>, TError,{data: BodyType<MeetingReadinessRequest>}, TContext> => {
 
 const mutationKey = ['generateContextInsight'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -310,7 +310,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateContextInsight>>, {data: BodyType<ContextInsightRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateContextInsight>>, {data: BodyType<MeetingReadinessRequest>}> = (props) => {
           const {data} = props ?? {};
 
           return  generateContextInsight(data,requestOptions)
@@ -324,18 +324,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type GenerateContextInsightMutationResult = NonNullable<Awaited<ReturnType<typeof generateContextInsight>>>
-    export type GenerateContextInsightMutationBody = BodyType<ContextInsightRequest>
+    export type GenerateContextInsightMutationBody = BodyType<MeetingReadinessRequest>
     export type GenerateContextInsightMutationError = ErrorType<unknown>
 
     /**
- * @summary Generate AI context insight for an employee
+ * @summary Generate AI meeting readiness report for a list of employees
  */
 export const useGenerateContextInsight = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateContextInsight>>, TError,{data: BodyType<ContextInsightRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateContextInsight>>, TError,{data: BodyType<MeetingReadinessRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof generateContextInsight>>,
         TError,
-        {data: BodyType<ContextInsightRequest>},
+        {data: BodyType<MeetingReadinessRequest>},
         TContext
       > => {
       return useMutation(getGenerateContextInsightMutationOptions(options));

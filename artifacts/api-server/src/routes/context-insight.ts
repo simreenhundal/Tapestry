@@ -1,6 +1,8 @@
 import { Router, type IRouter } from "express";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { GenerateContextInsightBody, GenerateContextInsightResponse } from "@workspace/api-zod";
+import { db, employeesTable } from "@workspace/db";
+import { inArray } from "drizzle-orm";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -34,7 +36,6 @@ async function fetchWeather(city: string, country: string): Promise<string> {
       weatherStr += ` Active weather alerts: ${alertNames}.`;
     }
 
-    // Flag severe conditions
     const severe = ["thunderstorm", "blizzard", "tornado", "hurricane", "heavy snow", "freezing", "ice", "sleet", "heavy rain", "extreme"];
     const isSevere = severe.some((s) => desc.toLowerCase().includes(s));
     if (isSevere) {
@@ -48,6 +49,48 @@ async function fetchWeather(city: string, country: string): Promise<string> {
   }
 }
 
+function getLocalTime(meetingDatetime: string, timezone: string): string {
+  try {
+    const date = new Date(meetingDatetime);
+    return date.toLocaleString("en-US", {
+      timeZone: timezone,
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZoneName: "short",
+    });
+  } catch {
+    return meetingDatetime;
+  }
+}
+
+const systemPrompt = `You are Tapestry, a context intelligence assistant for distributed enterprise teams.
+
+Your job is to answer one question for the meeting organizer: "Is this a good time to meet with this person?"
+
+You are given a snapshot of who this person is (their religion, cultural background, caregiving situation, work schedule preferences, health considerations, location) plus live conditions at the moment of the proposed meeting (the exact datetime, day of week, and real-time weather in their city). Use the baseline profile as context — but your output must be about what is happening ON THIS SPECIFIC DATE AND TIME, not general background information.
+
+RULES FOR DATE-SPECIFIC REASONING:
+- Do NOT say "they observe Ramadan from February to March." Say "It is currently Ramadan today" — or if it is not active on this date, do not mention it at all.
+- Do NOT list general facts about a religion. Reason: is any observance ACTIVE or IMMINENT on the exact date provided?
+- Day of week matters: Friday = Jumu'ah prayer for Muslims (midday unavailability), Friday sunset through Saturday night = Shabbat for Jewish people (no work). Saturday and Sunday are rest days for many Christian traditions.
+- Work hours matter: if the meeting falls outside the person's stated preferred work hours, flag it clearly.
+- If a major observance falls today or within 2 days of the meeting date, flag it by name and say what it means right now.
+- If no observance is active or imminent, say so briefly and move on to other real factors (weather, caregiving timing, timezone, work schedule).
+
+WEATHER AS A PRODUCTIVITY SIGNAL:
+- Live weather is provided for this person's city at the time of booking.
+- Severe or disruptive weather is a real productivity factor. Mention it directly.
+- Disruptions that matter: thunderstorms, heavy snow or blizzards, freezing rain, high winds, extreme heat above 38°C, active weather alerts. Light rain or mild overcast — no need to mention.
+
+OUTPUT FORMAT — JSON only, two fields:
+- "signal": "green" (clear — good time to meet), "yellow" (one consideration worth knowing), or "red" (active major observance today, severe weather, meeting outside work hours, or multiple real factors)
+- "reason": 2-3 sentences. Direct and warm. Mention the person's name. Lead with what matters TODAY. If it's a clear period, say so plainly and note something practical (best meeting window, timezone context, etc.).
+
+Respond ONLY with valid JSON. No markdown, no explanation outside the JSON.`;
+
 router.post("/context-insight", async (req, res): Promise<void> => {
   const parsed = GenerateContextInsightBody.safeParse(req.body);
   if (!parsed.success) {
@@ -55,110 +98,137 @@ router.post("/context-insight", async (req, res): Promise<void> => {
     return;
   }
 
-  const {
-    name,
-    city,
-    country,
-    timezone,
-    religion,
-    culturalBackground,
-    caregivingResponsibilities,
-    additionalContext,
-    meetingDate,
-  } = parsed.data;
+  const { employeeIds, meetingDatetime } = parsed.data;
 
-  const today = meetingDate || new Date().toISOString().split("T")[0];
+  const employees = await db
+    .select()
+    .from(employeesTable)
+    .where(inArray(employeesTable.id, employeeIds));
 
-  // Fetch live weather in parallel with building the prompt
-  const weatherSummary = await fetchWeather(city, country);
+  if (employees.length === 0) {
+    res.status(404).json({ error: "No employees found for given IDs" });
+    return;
+  }
 
-  const meetingDateObj = new Date(today);
-  const dayOfWeek = meetingDateObj.toLocaleDateString("en-US", { weekday: "long" });
-  const fullDateLabel = meetingDateObj.toLocaleDateString("en-US", {
+  const meetingDate = new Date(meetingDatetime);
+  const dayOfWeek = meetingDate.toLocaleDateString("en-US", { weekday: "long" });
+  const fullDateLabel = meetingDate.toLocaleDateString("en-US", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
+  const timeLabel = meetingDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 
-  const systemPrompt = `You are Tapestry, a context intelligence assistant for distributed enterprise teams.
+  const attendeeResults = await Promise.all(
+    employees.map(async (employee) => {
+      const weatherSummary = await fetchWeather(employee.city, employee.country);
+      const localTime = getLocalTime(meetingDatetime, employee.timezone);
 
-Your job is to answer one question for the manager: "Is right now a good time to meet with this person?"
+      const userPrompt = `Should the meeting organizer schedule a meeting with this team member at the specified time?
 
-You are given a snapshot of who this person is (their religion, cultural background, caregiving situation, location) plus live conditions at the moment the manager is trying to book (the exact date, day of week, and real-time weather in their city). Use the baseline profile as context — but your output must be about what is happening ON THIS SPECIFIC DATE, not general background information.
+Name: ${employee.name}
+Role: ${employee.role || "Not specified"}
+Location: ${employee.city}, ${employee.country}
+Timezone: ${employee.timezone || "Unknown"}
+Local time of proposed meeting: ${localTime}
+Preferred work hours: ${employee.preferredWorkStart || "09:00"} – ${employee.preferredWorkEnd || "17:00"} (${Array.isArray(employee.preferredWorkDays) && employee.preferredWorkDays.length > 0 ? employee.preferredWorkDays.join(", ") : "Mon–Fri"})
+Religion / spiritual practice: ${employee.religion || "Not specified"}
+Cultural background: ${employee.culturalBackground || "Not specified"}
+Caregiving responsibilities: ${employee.caregivingResponsibilities || "None"}
+Health considerations: ${employee.healthConsiderations || "None"}
+Personal notes: ${employee.additionalContext || "None"}
 
-RULES FOR DATE-SPECIFIC REASONING:
-- Do NOT say "they observe Ramadan from February to March." Say "It is currently Ramadan today" — or if it is not active on this date, do not mention it at all.
-- Do NOT list general facts about a religion. Reason: is any observance ACTIVE or IMMINENT on the exact date provided? Check the date against the real calendar.
-- Day of week matters: Friday = Jumu'ah prayer for Muslims (midday unavailability), Friday sunset through Saturday night = Shabbat for Jewish people (no work). Saturday and Sunday are rest days for many Christian traditions. Use the day of week provided.
-- If a major observance falls today or within 2 days of the meeting date, flag it by name and say what it means right now.
-- If no observance is active or imminent, say so briefly and move on to other real factors (weather, caregiving timing, timezone).
-
-WEATHER AS A PRODUCTIVITY SIGNAL:
-- Live weather is provided for this person's city at the time of booking.
-- Even if someone appears online, severe or disruptive weather is a real productivity factor. Mention it directly: "There is currently a severe thunderstorm in [city] — even if [name] is online, their focus and connectivity may be affected."
-- Disruptions that matter: thunderstorms, heavy snow or blizzards, freezing rain, high winds, extreme heat above 38°C, active weather alerts. Light rain or mild overcast — no need to mention.
-- Frame it as the manager would want to hear it: "This might not be the best moment for a high-stakes meeting."
-
-TRADITIONS TO APPLY THIS DATE-SPECIFIC REASONING TO (equally):
-Islam, Christianity (all denominations), Hinduism (region-specific), Sikhism, Judaism, Buddhism, Bahá'í, Jainism, Zoroastrianism, Indigenous traditions, Chinese/Lunar calendar, and national public holidays for the employee's country.
-
-OUTPUT FORMAT — JSON only, three fields:
-- "insight": 2-3 sentences. Direct and warm. Mention the person's name. Lead with what matters TODAY. If it's a quiet period — say that plainly and note something practical (best meeting window given timezone, caregiving schedule, etc.). Never pad with generic cultural background.
-- "readiness": "green" (clear — good time to meet), "yellow" (one consideration worth knowing), or "red" (active major observance today, severe weather, or multiple real factors — meeting likely unproductive or disrespectful to schedule).
-- "summary": One sentence, under 15 words. Should read like a status line a manager glances at. E.g. "It is currently Ramadan — fasting may affect afternoon energy." or "Severe thunderstorm in Lagos right now." or "Clear — good window to meet."
-
-Respond ONLY with valid JSON. No markdown, no explanation outside the JSON.`;
-
-  const userPrompt = `Should the manager book a meeting with this team member on the date below?
-
-Name: ${name}
-Location: ${city}, ${country}
-Timezone: ${timezone || "Unknown"}
-Religion / spiritual practice: ${religion || "Not specified"}
-Cultural background: ${culturalBackground || "Not specified"}
-Caregiving responsibilities: ${caregivingResponsibilities || "None"}
-Personal notes: ${additionalContext || "None"}
-
-MEETING DATE: ${fullDateLabel} (${today})
+MEETING DATE: ${fullDateLabel}
+MEETING TIME: ${timeLabel} UTC
 DAY OF WEEK: ${dayOfWeek}
-LIVE WEATHER RIGHT NOW in ${city}: ${weatherSummary}
+LIVE WEATHER RIGHT NOW in ${employee.city}: ${weatherSummary}
 
-Reason specifically against this date and these live conditions. Do not give general background — answer whether right now is a good time.`;
+Reason specifically against this date/time and these live conditions. Do not give general background.`;
 
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      max_completion_tokens: 512,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      response_format: { type: "json_object" },
-    });
+      try {
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o",
+          max_completion_tokens: 300,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          response_format: { type: "json_object" },
+        });
 
-    const content = response.choices[0]?.message?.content ?? "{}";
+        const content = response.choices[0]?.message?.content ?? "{}";
+        let aiResult: { signal?: string; reason?: string };
+        try {
+          aiResult = JSON.parse(content);
+        } catch {
+          aiResult = {};
+        }
 
-    let parsed2: { insight?: string; readiness?: string; summary?: string };
-    try {
-      parsed2 = JSON.parse(content);
-    } catch {
-      logger.error("Failed to parse OpenAI response as JSON");
-      res.status(500).json({ error: "Failed to generate insight" });
-      return;
-    }
+        const signal = ["green", "yellow", "red"].includes(aiResult.signal ?? "")
+          ? (aiResult.signal as "green" | "yellow" | "red")
+          : "green";
 
-    const result = GenerateContextInsightResponse.parse({
-      insight: parsed2.insight ?? "No insight generated.",
-      readiness: ["green", "yellow", "red"].includes(parsed2.readiness ?? "")
-        ? parsed2.readiness
-        : "green",
-      summary: parsed2.summary ?? "",
-    });
+        return {
+          employeeId: employee.id,
+          name: employee.name,
+          city: employee.city,
+          timezone: employee.timezone,
+          localTime,
+          signal,
+          reason: aiResult.reason ?? "No insight generated.",
+        };
+      } catch (err) {
+        logger.error({ err, employeeId: employee.id }, "Failed to generate insight for employee");
+        return {
+          employeeId: employee.id,
+          name: employee.name,
+          city: employee.city,
+          timezone: employee.timezone,
+          localTime,
+          signal: "yellow" as const,
+          reason: "Unable to generate insight at this time.",
+        };
+      }
+    })
+  );
 
-    req.log.info({ name, city, country, readiness: result.readiness }, "Context insight generated");
-    res.json(result);
-  } catch (error) {
-    logger.error({ error }, "Error calling OpenAI");
-    res.status(500).json({ error: "Failed to generate insight" });
+  const signalOrder = { red: 0, yellow: 1, green: 2 };
+  const aggregateSignal = attendeeResults.reduce<"green" | "yellow" | "red">((worst, a) => {
+    return signalOrder[a.signal] < signalOrder[worst] ? a.signal : worst;
+  }, "green");
+
+  const redCount = attendeeResults.filter((a) => a.signal === "red").length;
+  const yellowCount = attendeeResults.filter((a) => a.signal === "yellow").length;
+  const greenCount = attendeeResults.filter((a) => a.signal === "green").length;
+
+  let recommendation: string;
+  if (aggregateSignal === "green") {
+    recommendation = `This looks like a good time to meet. All ${greenCount} attendee${greenCount !== 1 ? "s" : ""} show a clear schedule with no active conflicts.`;
+  } else if (aggregateSignal === "yellow") {
+    recommendation = `Proceed with awareness. ${yellowCount} attendee${yellowCount !== 1 ? "s have" : " has"} considerations worth noting — the meeting can likely go ahead but may benefit from flexibility.`;
+  } else {
+    recommendation = `Consider rescheduling. ${redCount} attendee${redCount !== 1 ? "s have" : " has"} a significant conflict (active observance, severe weather, or out-of-hours scheduling). See individual readiness cards for details.`;
   }
+
+  const alternatives: string[] = [];
+  if (aggregateSignal !== "green") {
+    const meetingHour = meetingDate.getUTCHours();
+    if (meetingHour < 14) {
+      alternatives.push("Try 14:00 UTC — typically within business hours for both European and Asian timezones.");
+    } else {
+      alternatives.push("Try 10:00 UTC — a common overlap window for EMEA and Americas teams.");
+    }
+    alternatives.push("Consider scheduling 48 hours later to clear any active observance windows.");
+    alternatives.push("Poll attendees async for their preferred time windows this week.");
+  }
+
+  const result = GenerateContextInsightResponse.parse({
+    attendees: attendeeResults,
+    aggregateSignal,
+    recommendation,
+    alternatives,
+  });
+
+  req.log.info({ employeeCount: employees.length, aggregateSignal }, "Meeting readiness report generated");
+  res.json(result);
 });
 
 export default router;
